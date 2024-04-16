@@ -99,7 +99,7 @@ vim.g.maplocalleader = ' '
 vim.opt.number = true
 -- You can also add relative line numbers, for help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -169,12 +169,6 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
--- TIP: Disable arrow keys in normal mode
--- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
--- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
--- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
--- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
-
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows
 --
@@ -197,6 +191,23 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     vim.highlight.on_yank()
   end,
 })
+
+-- Highlight middle line
+--[[ vim.api.nvim_create_autocmd({ 'WinEnter', 'WinLeave', 'BufEnter', 'BufLeave' }, {
+  desc = 'Highlight middle line number',
+  callback = function()
+    local window_height = vim.api.nvim_win_get_height(0)
+    local num_lines = vim.api.nvim_buf_line_count(0)
+    local ns_id = vim.api.nvim_create_namespace 'middle_line_highlight'
+
+    vim.api.nvim_buf_clear_namespace(0, ns_id, 0, -1)
+
+    if num_lines > window_height then
+      local middleline = math.floor(window_height / 2)
+      vim.api.nvim_buf_add_highlight(0, ns_id, 'Visual', middleline - 1, 0, -1)
+    end
+  end,
+}) ]]
 
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
@@ -364,23 +375,26 @@ require('lazy').setup {
       local builtin = require 'telescope.builtin'
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-      vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
+      vim.keymap.set('n', '<C-P>', builtin.find_files, { desc = 'Search [P]roject files' })
+      vim.keymap.set('n', '<C-G>', builtin.git_files, { desc = 'Search [G]it files' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
-      vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-      vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+      vim.keymap.set('n', '<leader>*', builtin.grep_string, { desc = 'Search current word' })
+      vim.keymap.set('n', '<C-F>', builtin.live_grep, { desc = '[F]uzzily search in current work directory' })
+      vim.keymap.set('n', '<leader>/', builtin.current_buffer_fuzzy_find, { desc = '[/] Fuzzily search in current buffer' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
-      vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
-      vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
+      vim.keymap.set('n', '<leader>st', builtin.treesitter, { desc = '[S]earch [T]reesitter symbols' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      vim.keymap.set('n', '<leader>gc', builtin.git_commits, { desc = 'List [G]it [C]ommits' })
+      vim.keymap.set('n', '<leader>gf', builtin.git_bcommits, { desc = 'List [G]it [F]ile commits' })
+      vim.keymap.set('n', '<leader>gb', builtin.git_branches, { desc = 'List [G]it [B]ranches' })
+      vim.keymap.set('n', '<leader>gs', builtin.git_status, { desc = 'List [G]it [S]tatus' })
 
-      -- Slightly advanced example of overriding default behavior and theme
-      vim.keymap.set('n', '<leader>/', function()
-        -- You can pass additional configuration to telescope to change theme, layout, etc.
-        builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
-          winblend = 10,
-          previewer = false,
-        })
-      end, { desc = '[/] Fuzzily search in current buffer' })
+      vim.keymap.set('n', '<leader>sp', function()
+        builtin.planets {
+          show_pluto = true,
+          show_moon = true,
+        }
+      end, { desc = '[S]earch the [P]lanets' })
 
       -- Also possible to pass additional configuration options.
       --  See `:help telescope.builtin.live_grep()` for information about particular keys
@@ -721,12 +735,14 @@ require('lazy').setup {
     -- change the command in the config to whatever the name of that colorscheme is
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`
-    'folke/tokyonight.nvim',
+    'rose-pine/neovim',
+    name = 'rose-pine',
     lazy = false, -- make sure we load this during startup if it is your main colorscheme
     priority = 1000, -- make sure to load this before all the other start plugins
     config = function()
       -- Load the colorscheme here
-      vim.cmd.colorscheme 'tokyonight-night'
+      require('rose-pine').setup { variant = 'moon' }
+      vim.cmd.colorscheme 'rose-pine'
 
       -- You can configure highlights by doing something like
       vim.cmd.hi 'Comment gui=none'
@@ -754,6 +770,28 @@ require('lazy').setup {
       -- - sr)'  - [S]urround [R]eplace [)] [']
       require('mini.surround').setup()
 
+      -- Custom base16 color scheme
+      --[[ require('mini.base16').setup {
+        palette = {
+          base00 = '#031a16',
+          base01 = '#3e9688',
+          base02 = '#883e96',
+          base03 = '#3e4c96',
+          base04 = '#96883e',
+          base05 = '#4c963e',
+          base06 = '#963e4c',
+          base07 = '#81b5ac',
+          base08 = '#2b685e',
+          base09 = '#3e9688',
+          base0A = '#883e96',
+          base0B = '#3e4c96',
+          base0C = '#96883e',
+          base0D = '#4c963e',
+          base0E = '#963e4c',
+          base0F = '#d2e7e4',
+        },
+      } ]]
+
       -- Simple and easy statusline.
       --  You could remove this setup call if you don't like it,
       --  and try some other statusline plugin
@@ -765,7 +803,7 @@ require('lazy').setup {
       -- cursor information because line numbers are already enabled
       ---@diagnostic disable-next-line: duplicate-set-field
       statusline.section_location = function()
-        return ''
+        return '%l.%c | %p%%'
       end
 
       -- ... and there is more!
