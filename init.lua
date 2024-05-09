@@ -136,8 +136,11 @@ vim.opt.splitbelow = true
 -- Sets how neovim will display certain whitespace in the editor.
 --  See `:help 'list'`
 --  and `:help 'listchars'`
-vim.opt.list = true
+-- vim.opt.list = true
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
+
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
 
 -- Preview substitutions live, as you type!
 vim.opt.inccommand = 'split'
@@ -177,6 +180,10 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+-- Tab remaps
+vim.keymap.set('n', '<C-t>', '<cmd>tabe<CR>', { desc = 'New [T]ab' })
+vim.keymap.set('n', '<C-w>', '<cmd>tabc<CR>', { desc = 'Close tab [W]' })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -326,7 +333,7 @@ require('lazy').setup {
       -- Useful for getting pretty icons, but requires special font.
       --  If you already have a Nerd Font, or terminal set up with fallback fonts
       --  you can enable this
-      -- { 'nvim-tree/nvim-web-devicons' }
+      { 'nvim-tree/nvim-web-devicons' },
     },
     config = function()
       -- Telescope is a fuzzy finder that comes with a lot of different things that
@@ -388,6 +395,7 @@ require('lazy').setup {
       vim.keymap.set('n', '<leader>gf', builtin.git_bcommits, { desc = 'List [G]it [F]ile commits' })
       vim.keymap.set('n', '<leader>gb', builtin.git_branches, { desc = 'List [G]it [B]ranches' })
       vim.keymap.set('n', '<leader>gs', builtin.git_status, { desc = 'List [G]it [S]tatus' })
+      vim.keymap.set('n', '<leader>sc', builtin.colorscheme, { desc = '[S]et [C]olorscheme' })
 
       vim.keymap.set('n', '<leader>sp', function()
         builtin.planets {
@@ -548,7 +556,7 @@ require('lazy').setup {
         -- clangd = {},
         -- gopls = {},
         -- pyright = {},
-        -- rust_analyzer = {},
+        rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -557,6 +565,7 @@ require('lazy').setup {
         -- But for many setups, the LSP (`tsserver`) will work just fine
         -- tsserver = {},
         --
+        astro = {},
 
         lua_ls = {
           -- cmd = {...},
@@ -599,6 +608,7 @@ require('lazy').setup {
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format lua code
+        'astro',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -735,19 +745,21 @@ require('lazy').setup {
     -- change the command in the config to whatever the name of that colorscheme is
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`
-    'rose-pine/neovim',
-    name = 'rose-pine',
+    'gbprod/nord.nvim',
     lazy = false, -- make sure we load this during startup if it is your main colorscheme
     priority = 1000, -- make sure to load this before all the other start plugins
     config = function()
       -- Load the colorscheme here
-      require('rose-pine').setup { variant = 'moon' }
-      vim.cmd.colorscheme 'rose-pine'
+      require('nord').setup {}
+      vim.cmd.colorscheme 'nord'
 
       -- You can configure highlights by doing something like
       vim.cmd.hi 'Comment gui=none'
     end,
   },
+  { 'nyoom-engineering/oxocarbon.nvim' },
+  { 'AlexvZyl/nordic.nvim' },
+  { 'rebelot/kanagawa.nvim' },
 
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
@@ -769,6 +781,11 @@ require('lazy').setup {
       -- - sd'   - [S]urround [D]elete [']quotes
       -- - sr)'  - [S]urround [R]eplace [)] [']
       require('mini.surround').setup()
+
+      -- Very nice file explorer
+      local minifiles = require 'mini.files'
+      minifiles.setup()
+      vim.keymap.set('n', '<A-a>', minifiles.open)
 
       -- Custom base16 color scheme
       --[[ require('mini.base16').setup {
@@ -803,7 +820,7 @@ require('lazy').setup {
       -- cursor information because line numbers are already enabled
       ---@diagnostic disable-next-line: duplicate-set-field
       statusline.section_location = function()
-        return '%l.%c | %p%%'
+        return '%l:%c | %p%%'
       end
 
       -- ... and there is more!
@@ -819,7 +836,19 @@ require('lazy').setup {
 
       ---@diagnostic disable-next-line: missing-fields
       require('nvim-treesitter.configs').setup {
-        ensure_installed = { 'bash', 'c', 'html', 'lua', 'markdown', 'vim', 'vimdoc' },
+        ensure_installed = {
+          'bash',
+          'c',
+          'html',
+          'lua',
+          'markdown',
+          'vim',
+          'vimdoc',
+          'typescript',
+          'css',
+          'astro',
+          'tsx',
+        },
         -- Autoinstall languages that are not installed
         auto_install = true,
         highlight = { enable = true },
@@ -834,6 +863,9 @@ require('lazy').setup {
       --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
     end,
   },
+
+  -- Astro treesitter grammar bindings
+  { 'virchau13/tree-sitter-astro' },
 
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
